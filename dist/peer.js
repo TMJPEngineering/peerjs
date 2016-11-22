@@ -871,12 +871,20 @@ Peer.prototype._initialize = function(id) {
   this.socket.start(this.id, this.options.token);
 };
 
+var pingTimeout = 30000,
+initTimeout = 5000;
 /** Handles messages from the server. */
 Peer.prototype._handleMessage = function(message) {
   var type = message.type;
   var payload = message.payload;
   var peer = message.src;
   var connection;
+  var self = this;
+  this.on('open',function(){
+    setTimeout(function(){
+      self.ping();
+    }, initTimeout);
+  });
 
   switch (type) {
     case 'OPEN': // The connection to the server is open.
@@ -892,8 +900,12 @@ Peer.prototype._handleMessage = function(message) {
     case 'INVALID-KEY': // The given API key cannot be found.
       this._abort('invalid-key', 'API KEY "' + this.options.key + '" is invalid');
       break;
-
-    //
+    case 'PONG':
+      // reason for adding if network is cut still sending ping to check reply
+      setTimeout(function() {
+        self.ping();
+      }, pingTimeout);
+    break;
     case 'LEAVE': // Another peer has closed its connection to this peer.
       util.log('Received leave message from', peer);
       this._cleanupPeer(peer);
@@ -962,6 +974,14 @@ Peer.prototype._handleMessage = function(message) {
       break;
   }
 };
+
+Peer.prototype.ping = function() {
+  this.socket.send({
+    type: "PING",
+    src: this.id,
+    token : this.options.token,
+  });
+}
 
 /** Stores messages without a set up connection, to be claimed later. */
 Peer.prototype._storeMessage = function(connectionId, message) {
