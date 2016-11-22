@@ -408,11 +408,6 @@ Negotiator._idPrefix = 'pc_';
 Negotiator.startConnection = function(connection, options) {
   var pc = Negotiator._getPeerConnection(connection, options);
 
-  if (connection.type === 'media' && options._stream) {
-    // Add the stream.
-    pc.addStream(options._stream);
-  }
-
   // Set the connection's PC.
   connection.pc = connection.peerConnection = pc;
   // What do we need to do now?
@@ -439,6 +434,12 @@ Negotiator.startConnection = function(connection, options) {
     }
   } else {
     Negotiator.handleSDP('OFFER', connection, options.sdp);
+  }
+
+  
+  if (connection.type === 'media' && options._stream) {
+    // Add the stream.
+    pc.addStream(options._stream);
   }
 }
 
